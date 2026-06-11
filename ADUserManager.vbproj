@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>ADUserManager</RootNamespace>
+    <UseWindowsForms>true</UseWindowsForms>
+    <StartupObject>ADUserManager.Program</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>ADUserManager</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>AD User Manager</Authors>
+    <Description>Gerenciador de Desativação Temporária de Usuários do Active Directory</Description>
+  </PropertyGroup>
+
+</Project>
