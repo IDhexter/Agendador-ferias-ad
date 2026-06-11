@@ -62,6 +62,7 @@ Namespace ADUserManager
         Private btnReactivate As Button
         Private btnRemove As Button
         Private dgvTasks As DataGridView
+        Private txtSearch As TextBox
         Private rtbLog As RichTextBox
         Private lblStatus As Label
 
@@ -85,8 +86,6 @@ Namespace ADUserManager
                     "ADUserManager")
                 Directory.CreateDirectory(appDataPath)
                 historyFile = Path.Combine(appDataPath, "history.json")
-                scriptsDir = Path.Combine(appDataPath, "scripts")
-                Directory.CreateDirectory(scriptsDir)
 
                 ' Carregar histórico
                 history = New List(Of TaskEntry)()
@@ -359,6 +358,23 @@ Namespace ADUserManager
             lblGrid.AutoSize = True
             lblGrid.Location = New Point(20, yGrid)
             Me.Controls.Add(lblGrid)
+
+            Dim lblSearch As New Label()
+            lblSearch.Text = "Buscar Usuário:"
+            lblSearch.Font = New Font("Segoe UI", 9.5F)
+            lblSearch.ForeColor = clrSubtext
+            lblSearch.AutoSize = True
+            lblSearch.Location = New Point(590, yGrid + 2)
+            Me.Controls.Add(lblSearch)
+
+            txtSearch = New TextBox()
+            txtSearch.Size = New Size(200, 24)
+            txtSearch.Location = New Point(700, yGrid)
+            txtSearch.BackColor = clrSurface1
+            txtSearch.ForeColor = clrText
+            txtSearch.BorderStyle = BorderStyle.FixedSingle
+            AddHandler txtSearch.TextChanged, Sub(s, ev) RefreshGrid()
+            Me.Controls.Add(txtSearch)
 
             yGrid += 28
 
@@ -653,9 +669,9 @@ Namespace ADUserManager
 
                     AddLog("Usuário '" & username & "' DESABILITADO com sucesso.", clrGreen)
                 Else
-                    ' ── Passo 2b: Agendar Desativação ──
+                    ' ── Passo 2b: Agendar Desativação (Zero-Scripts) ──
                     taskNameDisable = "ADDisable_" & username & "_" & DateTime.Now.ToString("yyyyMMddHHmmss")
-                    Dim disableScriptPath As String = Path.Combine(scriptsDir, taskNameDisable & ".ps1")
+                    
                     Dim disableScriptContent As String =
                         "Import-Module ActiveDirectory" & vbCrLf &
                         "try {" & vbCrLf &
@@ -666,13 +682,16 @@ Namespace ADUserManager
                         "    $timestamp = Get-Date -Format 'dd/MM/yyyy HH:mm:ss'" & vbCrLf &
                         "    Write-Error ""[$timestamp] Erro ao desabilitar '" & username & "': $($_.Exception.Message)""" & vbCrLf &
                         "    exit 1" & vbCrLf &
-                        "}"
-                    File.WriteAllText(disableScriptPath, disableScriptContent, System.Text.Encoding.UTF8)
+                        "}" & vbCrLf &
+                        "Unregister-ScheduledTask -TaskName '" & taskNameDisable & "' -Confirm:$false -ErrorAction SilentlyContinue"
                     
+                    Dim disableBytes As Byte() = System.Text.Encoding.Unicode.GetBytes(disableScriptContent)
+                    Dim disableBase64 As String = Convert.ToBase64String(disableBytes)
+
                     AddLog("Criando tarefa agendada para desativação...", clrYellow)
                     Dim dDateStr As String = disableDate.ToString("yyyy-MM-ddTHH:mm:ss")
                     Dim dTaskCmd As String =
-                        "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File """ & disableScriptPath & """'" & vbCrLf &
+                        "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand " & disableBase64 & "'" & vbCrLf &
                         "$trigger = New-ScheduledTaskTrigger -Once -At '" & dDateStr & "'" & vbCrLf &
                         "$trigger.EndBoundary = (Get-Date '" & dDateStr & "').AddDays(30).ToString('s')" & vbCrLf &
                         "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Days 30)" & vbCrLf &
@@ -689,17 +708,10 @@ Namespace ADUserManager
                     End If
                 End If
 
-                ' ── Passo 3: Criar script de reativação ──
+                ' ── Passo 3: Criar tarefa de reativação (Zero-Scripts) ──
                 Dim taskName As String = "ADReactivate_" & username & "_" & DateTime.Now.ToString("yyyyMMddHHmmss")
-                Dim scriptPath As String = Path.Combine(scriptsDir, taskName & ".ps1")
 
                 Dim scriptContent As String =
-                    "# ═══════════════════════════════════════════════════════════════" & vbCrLf &
-                    "# Script de Reativação Automática - AD User Manager" & vbCrLf &
-                    "# Gerado em: " & DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") & vbCrLf &
-                    "# Usuário: " & username & vbCrLf &
-                    "# ═══════════════════════════════════════════════════════════════" & vbCrLf &
-                    "" & vbCrLf &
                     "Import-Module ActiveDirectory" & vbCrLf &
                     "try {" & vbCrLf &
                     "    Enable-ADAccount -Identity '" & username & "'" & vbCrLf &
@@ -709,20 +721,21 @@ Namespace ADUserManager
                     "    $timestamp = Get-Date -Format 'dd/MM/yyyy HH:mm:ss'" & vbCrLf &
                     "    Write-Error ""[$timestamp] Erro ao reativar '" & username & "': $($_.Exception.Message)""" & vbCrLf &
                     "    exit 1" & vbCrLf &
-                    "}"
-                File.WriteAllText(scriptPath, scriptContent, System.Text.Encoding.UTF8)
+                    "}" & vbCrLf &
+                    "Unregister-ScheduledTask -TaskName '" & taskName & "' -Confirm:$false -ErrorAction SilentlyContinue"
 
-                ' ── Passo 4: Criar tarefa agendada ──
+                Dim scriptBytes As Byte() = System.Text.Encoding.Unicode.GetBytes(scriptContent)
+                Dim scriptBase64 As String = Convert.ToBase64String(scriptBytes)
+
                 AddLog("Criando tarefa agendada para reativação...", clrYellow)
                 Dim dateStr As String = reactivationDate.ToString("yyyy-MM-ddTHH:mm:ss")
-
                 Dim taskCmd As String =
-                    "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File """ & scriptPath & """'" & vbCrLf &
+                    "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand " & scriptBase64 & "'" & vbCrLf &
                     "$trigger = New-ScheduledTaskTrigger -Once -At '" & dateStr & "'" & vbCrLf &
                     "$trigger.EndBoundary = (Get-Date '" & dateStr & "').AddDays(30).ToString('s')" & vbCrLf &
                     "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Days 30)" & vbCrLf &
                     "$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest" & vbCrLf &
-                    "Register-ScheduledTask -TaskName '" & taskName & "' -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Reativar usuario " & username & " no Active Directory - Gerado pelo AD User Manager' -Force" & vbCrLf &
+                    "Register-ScheduledTask -TaskName '" & taskName & "' -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Reativar usuario " & username & " no Active Directory' -Force" & vbCrLf &
                     "Write-Output 'TASK_CREATED'"
 
                 Dim taskResult = RunPowerShell(taskCmd)
@@ -822,17 +835,9 @@ Namespace ADUserManager
                     RunPowerShell(removeCmd)
                     AddLog("Tarefa agendada '" & entry.ScheduledTaskName & "' removida.", clrSubtext)
 
-                    ' Remover script
-                    Dim scriptPath As String = Path.Combine(scriptsDir, entry.ScheduledTaskName & ".ps1")
-                    If File.Exists(scriptPath) Then
-                        File.Delete(scriptPath)
-                    End If
-
                     ' Remover tarefa de desativação
                     If Not String.IsNullOrEmpty(entry.ScheduledDisableTaskName) Then
                         RunPowerShell("Unregister-ScheduledTask -TaskName '" & entry.ScheduledDisableTaskName & "' -Confirm:$false -ErrorAction SilentlyContinue")
-                        Dim disableScriptPath As String = Path.Combine(scriptsDir, entry.ScheduledDisableTaskName & ".ps1")
-                        If File.Exists(disableScriptPath) Then File.Delete(disableScriptPath)
                     End If
 
                     entry.Status = "Reativado"
@@ -901,17 +906,9 @@ Namespace ADUserManager
             Dim removeCmd As String = "Unregister-ScheduledTask -TaskName '" & entry.ScheduledTaskName & "' -Confirm:$false -ErrorAction SilentlyContinue"
             RunPowerShell(removeCmd)
 
-            ' Remover script
-            Dim scriptPath As String = Path.Combine(scriptsDir, entry.ScheduledTaskName & ".ps1")
-            If File.Exists(scriptPath) Then
-                File.Delete(scriptPath)
-            End If
-
             ' Remover tarefa de desativação
             If Not String.IsNullOrEmpty(entry.ScheduledDisableTaskName) Then
                 RunPowerShell("Unregister-ScheduledTask -TaskName '" & entry.ScheduledDisableTaskName & "' -Confirm:$false -ErrorAction SilentlyContinue")
-                Dim disableScriptPath As String = Path.Combine(scriptsDir, entry.ScheduledDisableTaskName & ".ps1")
-                If File.Exists(disableScriptPath) Then File.Delete(disableScriptPath)
             End If
 
             entry.Status = "Cancelado"
@@ -1038,13 +1035,17 @@ Namespace ADUserManager
         ''' </summary>
         Private Sub RefreshGrid()
             dgvTasks.Rows.Clear()
+            Dim filter As String = If(txtSearch IsNot Nothing AndAlso txtSearch.Text IsNot Nothing, txtSearch.Text.Trim().ToLower(), "")
+
             For Each entry In history
-                dgvTasks.Rows.Add(
-                    entry.Username,
-                    entry.DisabledDate,
-                    entry.ReactivationDate,
-                    entry.ScheduledTaskName,
-                    entry.Status)
+                If String.IsNullOrEmpty(filter) OrElse entry.Username.ToLower().Contains(filter) Then
+                    dgvTasks.Rows.Add(
+                        entry.Username,
+                        entry.DisabledDate,
+                        entry.ReactivationDate,
+                        entry.ScheduledTaskName,
+                        entry.Status)
+                End If
             Next
         End Sub
 
