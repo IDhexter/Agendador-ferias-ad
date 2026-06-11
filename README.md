@@ -45,6 +45,15 @@ graph TD;
 ### 4. Histórico Persistente
 *   Todas as operações são salvas localmente em `%LocalAppData%\ADUserManager\history.json`.
 
+## Detalhes do Agendamento (Por Baixo dos Panos)
+Para as equipes de infraestrutura e administração de sistemas, é essencial compreender o fluxo exato de como a reativação é agendada para fins de auditoria e segurança:
+
+1. **Local de Armazenamento**: Ao criar um agendamento, a ferramenta gera dinamicamente um arquivo de script PowerShell (`.ps1`) em uma pasta segura dentro do perfil do usuário que está rodando o programa:
+   `%LocalAppData%\ADUserManager\scripts\` *(ex: C:\Users\nome\AppData\Local\ADUserManager\scripts\)*
+2. **Conteúdo do Script**: O script contém as diretivas para reativar o usuário (`Enable-ADAccount -Identity 'Usuario'`) e, logo em seguida, um comando para **auto-descadastrar** a tarefa do Windows e deletar o próprio arquivo, garantindo que não fiquem resíduos no servidor.
+3. **Execução no Task Scheduler**: A tarefa é registrada na raiz do Agendador de Tarefas do Windows. Ela é instruída a invocar o executável nativo `powershell.exe` em *background* passando como argumento a flag `-ExecutionPolicy Bypass` e apontando para o script local.
+4. **Privilégios (SYSTEM)**: As tarefas são injetadas para rodar com privilégios máximos (`RunLevel Highest`) e utilizando a conta `SYSTEM` (LogonType ServiceAccount), garantindo que a reativação ocorra no servidor mesmo que o administrador original não esteja logado no dia/hora programados.
+
 ## Comandos PowerShell Utilizados
 
 ```powershell
