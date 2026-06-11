@@ -120,84 +120,116 @@ Namespace ADUserManager
 
 #Region "Inicialização da Interface"
 
+        Private dragging As Boolean = False
+        Private startPoint As Point = Point.Empty
+
         Private Sub InitializeUI()
             ' ─── Configurações do Formulário ───
             Me.Text = "AD User Manager"
             Me.ClientSize = New Size(940, 810)
             Me.StartPosition = FormStartPosition.CenterScreen
-            Me.BackColor = clrBase
+            Me.BackColor = clrCrust
             Me.ForeColor = clrText
             Me.Font = New Font("Segoe UI", 10)
-            Me.FormBorderStyle = FormBorderStyle.FixedSingle
+            Me.FormBorderStyle = FormBorderStyle.None ' Borderless Window
             Me.MaximizeBox = False
             Me.DoubleBuffered = True
 
             ' ═══════════════════════════════════════════════════════
-            '  HEADER
+            '  TITLE BAR CUSTOMIZADA
             ' ═══════════════════════════════════════════════════════
-            Dim pnlHeader As New Panel()
-            pnlHeader.Bounds = New Rectangle(0, 0, 940, 85)
-            pnlHeader.BackColor = clrMantle
-            Me.Controls.Add(pnlHeader)
-
-            Dim lblIcon As New Label()
-            lblIcon.Text = Char.ConvertFromUtf32(&H1F512)
-            lblIcon.Font = New Font("Segoe UI Emoji", 26)
-            lblIcon.ForeColor = clrBlue
-            lblIcon.AutoSize = True
-            lblIcon.Location = New Point(22, 14)
-            pnlHeader.Controls.Add(lblIcon)
+            Dim pnlTitleBar As New Panel()
+            pnlTitleBar.Bounds = New Rectangle(0, 0, 940, 40)
+            pnlTitleBar.BackColor = clrMantle
+            AddHandler pnlTitleBar.MouseDown, Sub(s, e)
+                                                  If e.Button = MouseButtons.Left Then
+                                                      dragging = True
+                                                      startPoint = New Point(e.X, e.Y)
+                                                  End If
+                                              End Sub
+            AddHandler pnlTitleBar.MouseMove, Sub(s, e)
+                                                  If dragging Then
+                                                      Dim p As Point = PointToScreen(e.Location)
+                                                      Location = New Point(p.X - startPoint.X, p.Y - startPoint.Y)
+                                                  End If
+                                              End Sub
+            AddHandler pnlTitleBar.MouseUp, Sub(s, e) dragging = False
+            Me.Controls.Add(pnlTitleBar)
 
             Dim lblTitle As New Label()
-            lblTitle.Text = "AD User Manager"
-            lblTitle.Font = New Font("Segoe UI", 20, FontStyle.Bold)
+            lblTitle.Text = Char.ConvertFromUtf32(&H1F512) & " AD User Manager"
+            lblTitle.Font = New Font("Segoe UI Semibold", 11)
             lblTitle.ForeColor = clrBlue
             lblTitle.AutoSize = True
-            lblTitle.Location = New Point(72, 8)
-            pnlHeader.Controls.Add(lblTitle)
+            lblTitle.Location = New Point(15, 10)
+            AddHandler lblTitle.MouseDown, Sub(s, e)
+                                               If e.Button = MouseButtons.Left Then
+                                                   dragging = True
+                                                   startPoint = New Point(e.X + lblTitle.Left, e.Y + lblTitle.Top)
+                                               End If
+                                           End Sub
+            AddHandler lblTitle.MouseMove, Sub(s, e)
+                                               If dragging Then
+                                                   Dim p As Point = PointToScreen(e.Location)
+                                                   Location = New Point(p.X - startPoint.X, p.Y - startPoint.Y)
+                                               End If
+                                           End Sub
+            AddHandler lblTitle.MouseUp, Sub(s, e) dragging = False
+            pnlTitleBar.Controls.Add(lblTitle)
 
-            Dim lblSubtitle As New Label()
-            lblSubtitle.Text = "Gerenciador de Desativação Temporária de Usuários do Active Directory"
-            lblSubtitle.Font = New Font("Segoe UI", 9.5F)
-            lblSubtitle.ForeColor = clrSubtext
-            lblSubtitle.AutoSize = True
-            lblSubtitle.Location = New Point(74, 48)
-            pnlHeader.Controls.Add(lblSubtitle)
-
-            ' Linha decorativa sob o header
-            Dim pnlAccentLine As New Panel()
-            pnlAccentLine.Bounds = New Rectangle(0, 82, 940, 3)
-            pnlAccentLine.BackColor = clrBlue
-            pnlHeader.Controls.Add(pnlAccentLine)
-
-            ' Botão Sobre
             Dim btnAbout As New Button()
-            btnAbout.Text = "Sobre"
+            btnAbout.Text = Char.ConvertFromUtf32(&H1F310) & " Sobre"
             btnAbout.Size = New Size(80, 30)
-            btnAbout.Location = New Point(830, 25)
+            btnAbout.Location = New Point(810, 5)
             btnAbout.FlatStyle = FlatStyle.Flat
-            btnAbout.BackColor = clrSurface0
-            btnAbout.ForeColor = clrText
-            btnAbout.FlatAppearance.BorderColor = clrOverlay0
+            btnAbout.BackColor = clrMantle
+            btnAbout.ForeColor = clrSubtext
+            btnAbout.FlatAppearance.BorderSize = 0
             btnAbout.Cursor = Cursors.Hand
-            AddHandler btnAbout.Click, Sub()
-                                           Process.Start(New ProcessStartInfo("https://github.com/IDhexter/Agendador-ferias-ad") With {.UseShellExecute = True})
-                                       End Sub
-            pnlHeader.Controls.Add(btnAbout)
+            AddHandler btnAbout.Click, Sub() Process.Start(New ProcessStartInfo("https://github.com/IDhexter/Agendador-ferias-ad") With {.UseShellExecute = True})
+            AddHandler btnAbout.MouseEnter, Sub(s, e)
+                                                btnAbout.BackColor = clrSurface0
+                                                btnAbout.ForeColor = clrText
+                                            End Sub
+            AddHandler btnAbout.MouseLeave, Sub(s, e)
+                                                btnAbout.BackColor = clrMantle
+                                                btnAbout.ForeColor = clrSubtext
+                                            End Sub
+            pnlTitleBar.Controls.Add(btnAbout)
+
+            Dim btnClose As New Button()
+            btnClose.Text = "X"
+            btnClose.Font = New Font("Segoe UI Semibold", 10)
+            btnClose.Size = New Size(40, 40)
+            btnClose.Location = New Point(900, 0)
+            btnClose.FlatStyle = FlatStyle.Flat
+            btnClose.FlatAppearance.BorderSize = 0
+            btnClose.BackColor = clrMantle
+            btnClose.ForeColor = clrSubtext
+            btnClose.Cursor = Cursors.Hand
+            AddHandler btnClose.Click, Sub() Me.Close()
+            AddHandler btnClose.MouseEnter, Sub(s, e)
+                                                btnClose.BackColor = clrRed
+                                                btnClose.ForeColor = clrCrust
+                                            End Sub
+            AddHandler btnClose.MouseLeave, Sub(s, e)
+                                                btnClose.BackColor = clrMantle
+                                                btnClose.ForeColor = clrSubtext
+                                            End Sub
+            pnlTitleBar.Controls.Add(btnClose)
 
             ' ═══════════════════════════════════════════════════════
-            '  SEÇÃO DE ENTRADA
+            '  CARTÃO 1: ENTRADA DE DADOS E AÇÕES
             ' ═══════════════════════════════════════════════════════
-            Dim pnlInput As New Panel()
-            pnlInput.Bounds = New Rectangle(20, 100, 900, 160)
-            pnlInput.BackColor = clrSurface0
-            Me.Controls.Add(pnlInput)
+            Dim pnlCardInput As New Panel()
+            pnlCardInput.Bounds = New Rectangle(20, 60, 900, 240)
+            pnlCardInput.BackColor = clrBase
+            Me.Controls.Add(pnlCardInput)
 
-            ' Borda esquerda decorativa
             Dim pnlInputAccent As New Panel()
-            pnlInputAccent.Bounds = New Rectangle(0, 0, 4, 160)
-            pnlInputAccent.BackColor = clrMauve
-            pnlInput.Controls.Add(pnlInputAccent)
+            pnlInputAccent.Bounds = New Rectangle(0, 0, 4, 240)
+            pnlInputAccent.BackColor = clrBlue
+            pnlCardInput.Controls.Add(pnlInputAccent)
 
             ' Linha 1: Usuário
             Dim lblUser As New Label()
@@ -205,32 +237,17 @@ Namespace ADUserManager
             lblUser.Font = New Font("Segoe UI Semibold", 10)
             lblUser.ForeColor = clrSubtext
             lblUser.AutoSize = True
-            lblUser.Location = New Point(20, 18)
-            pnlInput.Controls.Add(lblUser)
+            lblUser.Location = New Point(20, 25)
+            pnlCardInput.Controls.Add(lblUser)
 
             txtUsername = New TextBox()
             txtUsername.Size = New Size(660, 28)
-            txtUsername.Location = New Point(135, 15)
-            txtUsername.BackColor = clrSurface1
+            txtUsername.Location = New Point(135, 22)
+            txtUsername.BackColor = clrSurface0
             txtUsername.ForeColor = clrText
             txtUsername.BorderStyle = BorderStyle.FixedSingle
             txtUsername.Font = New Font("Segoe UI", 11)
-            AddHandler txtUsername.KeyDown, Sub(s, ev)
-                                               If ev.KeyCode = Keys.Enter Then
-                                                   BtnDisable_Click(Nothing, EventArgs.Empty)
-                                                   ev.SuppressKeyPress = True
-                                               End If
-                                           End Sub
-            pnlInput.Controls.Add(txtUsername)
-
-            ' Dica do campo
-            Dim lblUserHint As New Label()
-            lblUserHint.Text = "(sAMAccountName do usuário no AD)"
-            lblUserHint.Font = New Font("Segoe UI", 8.5F, FontStyle.Italic)
-            lblUserHint.ForeColor = clrOverlay0
-            lblUserHint.AutoSize = True
-            lblUserHint.Location = New Point(800, 20)
-            pnlInput.Controls.Add(lblUserHint)
+            pnlCardInput.Controls.Add(txtUsername)
 
             ' Linha 2: Data e Hora de Desativação
             Dim lblDisable As New Label()
@@ -238,45 +255,45 @@ Namespace ADUserManager
             lblDisable.Font = New Font("Segoe UI Semibold", 10)
             lblDisable.ForeColor = clrSubtext
             lblDisable.AutoSize = True
-            lblDisable.Location = New Point(20, 65)
-            pnlInput.Controls.Add(lblDisable)
+            lblDisable.Location = New Point(20, 75)
+            pnlCardInput.Controls.Add(lblDisable)
 
             rbDisableNow = New RadioButton()
             rbDisableNow.Text = "Imediata"
             rbDisableNow.Font = New Font("Segoe UI", 10)
             rbDisableNow.ForeColor = clrText
-            rbDisableNow.Location = New Point(135, 63)
+            rbDisableNow.Location = New Point(135, 73)
             rbDisableNow.AutoSize = True
             rbDisableNow.Checked = True
-            pnlInput.Controls.Add(rbDisableNow)
+            pnlCardInput.Controls.Add(rbDisableNow)
 
             rbDisableSchedule = New RadioButton()
             rbDisableSchedule.Text = "Agendar"
             rbDisableSchedule.Font = New Font("Segoe UI", 10)
             rbDisableSchedule.ForeColor = clrText
-            rbDisableSchedule.Location = New Point(230, 63)
+            rbDisableSchedule.Location = New Point(230, 73)
             rbDisableSchedule.AutoSize = True
-            pnlInput.Controls.Add(rbDisableSchedule)
+            pnlCardInput.Controls.Add(rbDisableSchedule)
 
             dtpDisableDate = New DateTimePicker()
             dtpDisableDate.Format = DateTimePickerFormat.Short
             dtpDisableDate.Size = New Size(120, 28)
-            dtpDisableDate.Location = New Point(320, 62)
+            dtpDisableDate.Location = New Point(320, 72)
             dtpDisableDate.MinDate = DateTime.Today
             dtpDisableDate.Value = DateTime.Today
             dtpDisableDate.Font = New Font("Segoe UI", 10)
             dtpDisableDate.Visible = False
-            pnlInput.Controls.Add(dtpDisableDate)
+            pnlCardInput.Controls.Add(dtpDisableDate)
 
             dtpDisableTime = New DateTimePicker()
             dtpDisableTime.Format = DateTimePickerFormat.Time
             dtpDisableTime.ShowUpDown = True
             dtpDisableTime.Size = New Size(90, 28)
-            dtpDisableTime.Location = New Point(450, 62)
+            dtpDisableTime.Location = New Point(450, 72)
             dtpDisableTime.Value = DateTime.Today.AddHours(18)
             dtpDisableTime.Font = New Font("Segoe UI", 10)
             dtpDisableTime.Visible = False
-            pnlInput.Controls.Add(dtpDisableTime)
+            pnlCardInput.Controls.Add(dtpDisableTime)
 
             AddHandler rbDisableSchedule.CheckedChanged, Sub(s, ev)
                                                              dtpDisableDate.Visible = rbDisableSchedule.Checked
@@ -289,102 +306,101 @@ Namespace ADUserManager
             lblDate.Font = New Font("Segoe UI Semibold", 10)
             lblDate.ForeColor = clrSubtext
             lblDate.AutoSize = True
-            lblDate.Location = New Point(20, 112)
-            pnlInput.Controls.Add(lblDate)
+            lblDate.Location = New Point(20, 125)
+            pnlCardInput.Controls.Add(lblDate)
 
             dtpDate = New DateTimePicker()
             dtpDate.Format = DateTimePickerFormat.Short
             dtpDate.Size = New Size(150, 28)
-            dtpDate.Location = New Point(135, 109)
+            dtpDate.Location = New Point(135, 122)
             dtpDate.MinDate = DateTime.Today
             dtpDate.Value = DateTime.Today.AddDays(1)
             dtpDate.Font = New Font("Segoe UI", 10)
-            pnlInput.Controls.Add(dtpDate)
+            pnlCardInput.Controls.Add(dtpDate)
 
             Dim lblTime As New Label()
             lblTime.Text = "Hora:"
             lblTime.Font = New Font("Segoe UI Semibold", 10)
             lblTime.ForeColor = clrSubtext
             lblTime.AutoSize = True
-            lblTime.Location = New Point(305, 112)
-            pnlInput.Controls.Add(lblTime)
+            lblTime.Location = New Point(305, 125)
+            pnlCardInput.Controls.Add(lblTime)
 
             dtpTime = New DateTimePicker()
             dtpTime.Format = DateTimePickerFormat.Time
             dtpTime.ShowUpDown = True
             dtpTime.Size = New Size(120, 28)
-            dtpTime.Location = New Point(355, 109)
-            dtpTime.Value = DateTime.Today.AddHours(8) ' Padrão: 08:00
+            dtpTime.Location = New Point(355, 122)
+            dtpTime.Value = DateTime.Today.AddHours(8)
             dtpTime.Font = New Font("Segoe UI", 10)
-            pnlInput.Controls.Add(dtpTime)
+            pnlCardInput.Controls.Add(dtpTime)
 
-            Dim lblDateHint As New Label()
-            lblDateHint.Text = "(data e hora em que o usuário será REATIVADO automaticamente)"
-            lblDateHint.Font = New Font("Segoe UI", 8.5F, FontStyle.Italic)
-            lblDateHint.ForeColor = clrOverlay0
-            lblDateHint.AutoSize = True
-            lblDateHint.Location = New Point(490, 114)
-            pnlInput.Controls.Add(lblDateHint)
-
-            ' ═══════════════════════════════════════════════════════
-            '  BOTÕES DE AÇÃO
-            ' ═══════════════════════════════════════════════════════
-            Dim yBtn As Integer = 272
-
-            btnDisable = CreateStyledButton("  Aplicar Desativação e Reativação", clrRed, 330)
-            btnDisable.Location = New Point(20, yBtn)
-            Me.Controls.Add(btnDisable)
+            ' Botões de Ação
+            btnDisable = CreateStyledButton(Char.ConvertFromUtf32(&H1F4C5) & "  Aplicar Agendamento", clrBlue, clrCrust, 280)
+            btnDisable.Location = New Point(20, 175)
+            pnlCardInput.Controls.Add(btnDisable)
             AddHandler btnDisable.Click, AddressOf BtnDisable_Click
+            AddHandler txtUsername.KeyDown, Sub(s, ev)
+                                                If ev.KeyCode = Keys.Enter Then
+                                                    BtnDisable_Click(Nothing, EventArgs.Empty)
+                                                    ev.SuppressKeyPress = True
+                                                End If
+                                            End Sub
 
-            btnReactivate = CreateStyledButton("  Reativar Agora", clrGreen, 180)
-            btnReactivate.Location = New Point(360, yBtn)
-            Me.Controls.Add(btnReactivate)
+            btnReactivate = CreateStyledButton(Char.ConvertFromUtf32(&H26A1) & "  Reativar Agora", clrSurface1, clrText, 200)
+            btnReactivate.Location = New Point(320, 175)
+            pnlCardInput.Controls.Add(btnReactivate)
             AddHandler btnReactivate.Click, AddressOf BtnReactivate_Click
 
-            btnRemove = CreateStyledButton("  Remover Agendamento", clrOverlay0, 220)
-            btnRemove.Location = New Point(550, yBtn)
-            Me.Controls.Add(btnRemove)
+            btnRemove = CreateStyledButton(Char.ConvertFromUtf32(&H1F5D1) & "  Remover Agendamento", clrSurface1, clrText, 230)
+            btnRemove.Location = New Point(540, 175)
+            pnlCardInput.Controls.Add(btnRemove)
             AddHandler btnRemove.Click, AddressOf BtnRemove_Click
 
             ' ═══════════════════════════════════════════════════════
-            '  TABELA DE TAREFAS AGENDADAS
+            '  CARTÃO 2: TABELA DE TAREFAS
             ' ═══════════════════════════════════════════════════════
-            Dim yGrid As Integer = 328
+            Dim pnlCardGrid As New Panel()
+            pnlCardGrid.Bounds = New Rectangle(20, 320, 900, 250)
+            pnlCardGrid.BackColor = clrBase
+            Me.Controls.Add(pnlCardGrid)
+
+            Dim pnlGridAccent As New Panel()
+            pnlGridAccent.Bounds = New Rectangle(0, 0, 4, 250)
+            pnlGridAccent.BackColor = clrMauve
+            pnlCardGrid.Controls.Add(pnlGridAccent)
 
             Dim lblGrid As New Label()
-            lblGrid.Text = "  Tarefas Agendadas"
+            lblGrid.Text = "Tarefas Agendadas"
             lblGrid.Font = New Font("Segoe UI Semibold", 11)
             lblGrid.ForeColor = clrMauve
             lblGrid.AutoSize = True
-            lblGrid.Location = New Point(20, yGrid)
-            Me.Controls.Add(lblGrid)
+            lblGrid.Location = New Point(15, 15)
+            pnlCardGrid.Controls.Add(lblGrid)
 
             Dim lblSearch As New Label()
             lblSearch.Text = "Buscar Usuário:"
             lblSearch.Font = New Font("Segoe UI", 9.5F)
             lblSearch.ForeColor = clrSubtext
             lblSearch.AutoSize = True
-            lblSearch.Location = New Point(590, yGrid + 2)
-            Me.Controls.Add(lblSearch)
+            lblSearch.Location = New Point(590, 17)
+            pnlCardGrid.Controls.Add(lblSearch)
 
             txtSearch = New TextBox()
-            txtSearch.Size = New Size(200, 24)
-            txtSearch.Location = New Point(700, yGrid)
-            txtSearch.BackColor = clrSurface1
+            txtSearch.Size = New Size(190, 24)
+            txtSearch.Location = New Point(695, 15)
+            txtSearch.BackColor = clrSurface0
             txtSearch.ForeColor = clrText
             txtSearch.BorderStyle = BorderStyle.FixedSingle
             AddHandler txtSearch.TextChanged, Sub(s, ev) RefreshGrid()
-            Me.Controls.Add(txtSearch)
-
-            yGrid += 28
+            pnlCardGrid.Controls.Add(txtSearch)
 
             dgvTasks = New DataGridView()
-            dgvTasks.Location = New Point(20, yGrid)
-            dgvTasks.Size = New Size(900, 185)
+            dgvTasks.Location = New Point(20, 50)
+            dgvTasks.Size = New Size(860, 185)
 
-            ' Estilização da tabela (tema escuro)
             dgvTasks.BackgroundColor = clrMantle
-            dgvTasks.GridColor = clrSurface1
+            dgvTasks.GridColor = clrSurface0
             dgvTasks.BorderStyle = BorderStyle.None
             dgvTasks.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
             dgvTasks.RowHeadersVisible = False
@@ -399,25 +415,21 @@ Namespace ADUserManager
             dgvTasks.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing
             dgvTasks.RowTemplate.Height = 32
 
-            ' Estilo padrão das células
             dgvTasks.DefaultCellStyle.BackColor = clrSurface0
             dgvTasks.DefaultCellStyle.ForeColor = clrText
-            dgvTasks.DefaultCellStyle.SelectionBackColor = Color.FromArgb(60, 137, 180, 250)
+            dgvTasks.DefaultCellStyle.SelectionBackColor = clrSurface2
             dgvTasks.DefaultCellStyle.SelectionForeColor = clrText
             dgvTasks.DefaultCellStyle.Font = New Font("Segoe UI", 9.5F)
             dgvTasks.DefaultCellStyle.Padding = New Padding(8, 2, 4, 2)
 
-            ' Estilo de linhas alternadas
             dgvTasks.AlternatingRowsDefaultCellStyle.BackColor = clrMantle
 
-            ' Estilo do cabeçalho
             dgvTasks.ColumnHeadersDefaultCellStyle.BackColor = clrCrust
             dgvTasks.ColumnHeadersDefaultCellStyle.ForeColor = clrSubtext
             dgvTasks.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI Semibold", 9.5F)
             dgvTasks.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
             dgvTasks.ColumnHeadersDefaultCellStyle.Padding = New Padding(8, 0, 0, 0)
 
-            ' Colunas
             dgvTasks.Columns.Add("colUser", "Usuário")
             dgvTasks.Columns.Add("colDisabled", "Desabilitado em")
             dgvTasks.Columns.Add("colReactivation", "Reativação em")
@@ -431,84 +443,80 @@ Namespace ADUserManager
             dgvTasks.Columns("colStatus").FillWeight = 16
 
             AddHandler dgvTasks.CellFormatting, AddressOf DgvTasks_CellFormatting
-
-            Me.Controls.Add(dgvTasks)
+            pnlCardGrid.Controls.Add(dgvTasks)
 
             ' ═══════════════════════════════════════════════════════
-            '  LOG DE ATIVIDADES
+            '  CARTÃO 3: LOG DE ATIVIDADES
             ' ═══════════════════════════════════════════════════════
-            Dim yLog As Integer = 553
+            Dim pnlCardLog As New Panel()
+            pnlCardLog.Bounds = New Rectangle(20, 590, 900, 160)
+            pnlCardLog.BackColor = clrBase
+            Me.Controls.Add(pnlCardLog)
+
+            Dim pnlLogAccent As New Panel()
+            pnlLogAccent.Bounds = New Rectangle(0, 0, 4, 160)
+            pnlLogAccent.BackColor = clrGreen
+            pnlCardLog.Controls.Add(pnlLogAccent)
 
             Dim lblLog As New Label()
-            lblLog.Text = "  Log de Atividades"
+            lblLog.Text = "Log de Atividades"
             lblLog.Font = New Font("Segoe UI Semibold", 11)
             lblLog.ForeColor = clrMauve
             lblLog.AutoSize = True
-            lblLog.Location = New Point(20, yLog)
-            Me.Controls.Add(lblLog)
-
-            yLog += 28
+            lblLog.Location = New Point(15, 10)
+            pnlCardLog.Controls.Add(lblLog)
 
             rtbLog = New RichTextBox()
-            rtbLog.Location = New Point(20, yLog)
-            rtbLog.Size = New Size(900, 170)
+            rtbLog.Location = New Point(20, 35)
+            rtbLog.Size = New Size(860, 110)
             rtbLog.BackColor = clrMantle
             rtbLog.ForeColor = clrText
             rtbLog.Font = New Font("Consolas", 9.5F)
             rtbLog.BorderStyle = BorderStyle.None
             rtbLog.ReadOnly = True
             rtbLog.ScrollBars = RichTextBoxScrollBars.Vertical
-            Me.Controls.Add(rtbLog)
+            pnlCardLog.Controls.Add(rtbLog)
 
             ' ═══════════════════════════════════════════════════════
             '  BARRA DE STATUS
             ' ═══════════════════════════════════════════════════════
             Dim pnlStatus As New Panel()
-            pnlStatus.Bounds = New Rectangle(0, 760, 940, 50)
-            pnlStatus.BackColor = clrCrust
+            pnlStatus.Bounds = New Rectangle(0, 770, 940, 40)
+            pnlStatus.BackColor = clrMantle
             Me.Controls.Add(pnlStatus)
-
-            ' Linha decorativa acima da status bar
-            Dim pnlStatusLine As New Panel()
-            pnlStatusLine.Bounds = New Rectangle(0, 0, 940, 2)
-            pnlStatusLine.BackColor = clrSurface1
-            pnlStatus.Controls.Add(pnlStatusLine)
 
             lblStatus = New Label()
             lblStatus.Text = "● Pronto"
             lblStatus.Font = New Font("Segoe UI", 9.5F)
             lblStatus.ForeColor = clrGreen
             lblStatus.AutoSize = True
-            lblStatus.Location = New Point(20, 14)
+            lblStatus.Location = New Point(15, 10)
             pnlStatus.Controls.Add(lblStatus)
 
             Dim lblVersion As New Label()
-            lblVersion.Text = "v1.0  |  PowerShell + Active Directory"
+            lblVersion.Text = "v1.0  |  Corporate Edition"
             lblVersion.Font = New Font("Segoe UI", 8.5F)
             lblVersion.ForeColor = clrOverlay0
             lblVersion.AutoSize = True
-            lblVersion.Location = New Point(720, 16)
+            lblVersion.Location = New Point(770, 12)
             pnlStatus.Controls.Add(lblVersion)
         End Sub
 
-        ''' <summary>
-        ''' Cria um botão estilizado com hover effect.
-        ''' </summary>
-        Private Function CreateStyledButton(text As String, bgColor As Color, width As Integer) As Button
+        Private Function CreateStyledButton(text As String, bgColor As Color, txtColor As Color, width As Integer) As Button
             Dim btn As New Button()
             btn.Text = text
             btn.Size = New Size(width, 42)
             btn.FlatStyle = FlatStyle.Flat
             btn.FlatAppearance.BorderSize = 0
             btn.BackColor = bgColor
-            btn.ForeColor = clrCrust
+            btn.ForeColor = txtColor
             btn.Font = New Font("Segoe UI Semibold", 10)
             btn.Cursor = Cursors.Hand
             btn.TextAlign = ContentAlignment.MiddleCenter
 
             Dim originalColor = bgColor
             AddHandler btn.MouseEnter, Sub(s, e)
-                                           DirectCast(s, Button).BackColor = ControlPaint.Light(originalColor, 0.25F)
+                                           DirectCast(s, Button).BackColor = ControlPaint.Light(originalColor, 0.15F)
                                        End Sub
             AddHandler btn.MouseLeave, Sub(s, e)
                                            DirectCast(s, Button).BackColor = originalColor
