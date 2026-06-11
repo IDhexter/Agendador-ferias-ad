@@ -1,43 +1,101 @@
-# Agendador Férias AD
+# AD User Manager - Agendador de Férias AD
 
-Gerenciador de Desativação Temporária de Usuários do Active Directory (AD).
+[⬇️ **BAIXAR O EXECUTÁVEL PRONTO (ADUserManager.exe)**](Download/ADUserManager.exe)
 
-Este aplicativo foi desenvolvido em **VB.NET (WinForms) e .NET 8** com o objetivo de facilitar o processo de desativação temporária (férias, licenças, afastamentos) de contas de usuários no Active Directory, realizando o agendamento automático para reativação das contas na data e hora especificadas.
+## Visão Geral
+Programa em **VB.NET (Windows Forms)** que permite desabilitar usuários do [Active Directory](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview) e agendar automaticamente a reativação em uma data/hora futura, usando [PowerShell](https://learn.microsoft.com/en-us/powershell/) e **Tarefas Agendadas do Windows**.
+
+## Arquitetura
+A ferramenta utiliza uma interface rica que se comunica com o sistema operacional para realizar operações automáticas.
+
+```mermaid
+graph TD;
+    UI[Interface Gráfica WinForms] --> AD[Active Directory]
+    UI --> TS[Windows Task Scheduler]
+    UI --> JSON[Histórico e Banco de Dados Local]
+    TS -. Executa na Data/Hora .-> AD
+```
+
+## Estrutura de Arquivos
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `ADUserManager.vbproj` | Projeto .NET 8 WinForms |
+| `app.manifest` | Manifesto para elevação de privilégios de Administrador (UAC) |
+| `Program.vb` | Ponto de entrada da aplicação (Entry Point) |
+| `MainForm.vb` | Formulário principal contendo toda a lógica visual e operações PowerShell |
 
 ## Funcionalidades
 
-- **Desativação Imediata**: Desabilita o usuário no Active Directory no exato momento da execução.
-- **Agendamento Automático**: Cria uma Tarefa Agendada no Windows (Task Scheduler) configurada para rodar em uma data e hora futuras. Esta tarefa roda um script PowerShell oculto que habilita o usuário no AD na data programada.
-- **Histórico e Status Visual**: Mantém um histórico detalhado das operações pendentes e concluídas, gravando tudo em um banco de dados local (JSON). O status é exibido com cores (Agendado, Reativado, Cancelado).
-- **Cancelamento de Agendamentos**: Permite cancelar tarefas de reativação pendentes. Ao cancelar, a tarefa do Windows correspondente é limpa automaticamente.
-- **Execução Segura (Bypass de Heurística Antivírus)**: Os comandos PowerShell interagem nativamente com o console (via StandardInput), prevenindo que ferramentas como o Windows Defender acusem falsos positivos ou excluam a aplicação.
+### 1. Desabilitar e Agendar Reativação
+*   Insira o `sAMAccountName` do usuário e a data/hora de reativação desejada.
+*   O programa executa `Disable-ADAccount` via PowerShell imediatamente.
+*   Registra uma **Tarefa Agendada do Windows** para executar o comando de reativação na data/hora especificada.
+*   A tarefa roda como `SYSTEM` com privilégios elevados, operando mesmo com o programa fechado.
 
-## Requisitos do Sistema
+### 2. Reativar Agora
+*   Selecione uma tarefa na tabela e clique em **Reativar Agora**.
+*   Executa `Enable-ADAccount` imediatamente.
+*   Remove a tarefa agendada correspondente no Windows.
 
-- **Sistema Operacional**: Windows 10, Windows 11, ou Windows Server 2016+.
-- **Privilégios**: É necessário privilégio de Administrador para que a aplicação possa alterar o estado do AD e registrar tarefas no Windows Task Scheduler (o `.exe` já solicita elevação automaticamente via UAC).
-- **Dependências de Infraestrutura**: O computador onde a aplicação está rodando precisa ter os módulos do Active Directory instalados (**RSAT** - Remote Server Administration Tools).
-- **Runtime .NET**: Pode ser compilado como *Framework-Dependent* (requer .NET 8 Desktop Runtime instalado) ou *Self-Contained* (não requer dependências).
+### 3. Remover Agendamento
+*   Cancela a tarefa agendada sem reativar o usuário.
+*   O usuário permanece desabilitado (requerendo ação manual futura).
 
-## Como Instalar e Rodar
+### 4. Histórico Persistente
+*   Todas as operações são salvas localmente em `%LocalAppData%\ADUserManager\history.json`.
 
-1. Baixe o código fonte.
-2. Certifique-se de possuir o SDK do .NET 8 instalado.
-3. Abra a pasta do projeto no terminal e execute o comando para gerar o `.exe` de arquivo único e leve:
-   ```bash
-   dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
-   ```
-4. O arquivo `ADUserManager.exe` gerado na pasta `publish` poderá ser colocado no Desktop ou em qualquer outra pasta e estará pronto para uso.
+## Comandos PowerShell Utilizados
 
-## Detalhes Técnicos
+```powershell
+# Verificar se o usuário existe
+Get-ADUser -Identity '<username>'
 
-A comunicação com o Active Directory é feita inteiramente via comandos shell do PowerShell internamente:
-- `Disable-ADAccount`
-- `Enable-ADAccount`
-- `Register-ScheduledTask`
-- `Unregister-ScheduledTask`
+# Desabilitar usuário
+Disable-ADAccount -Identity '<username>'
 
-Todas as tarefas agendadas são criadas no diretório `\ADUserManager\` dentro do Task Scheduler do Windows, para manter o sistema limpo e organizado.
+# Reativar usuário
+Enable-ADAccount -Identity '<username>'
 
-## Licença
-Este software é fornecido conforme as necessidades de administração local. Sinta-se à vontade para fazer forks e pull requests.
+# Criar tarefa agendada
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '...'
+$trigger = New-ScheduledTaskTrigger -Once -At '<datetime>'
+Register-ScheduledTask -TaskName '<name>' -Action $action -Trigger $trigger ...
+
+# Remover tarefa agendada
+Unregister-ScheduledTask -TaskName '<name>' -Confirm:$false
+```
+
+## Como Compilar o .exe
+
+### Pré-requisitos
+*   [.NET 8 SDK instalado](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+### Compilação
+Abra o terminal na pasta do projeto (`ADUserManager`) e rode diretamente:
+
+```bash
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+```
+
+O arquivo `.exe` único e leve (Framework-Dependent) será gerado em:
+`bin\Release\net8.0-windows\win-x64\publish\ADUserManager.exe`
+
+> **NOTA TÉCNICA:** A versão recomendada atualmente é **Framework-Dependent** para evitar falsos positivos com o Windows Defender ao rodar aplicações empacotadas via self-extraction.
+
+## Requisitos para Execução
+
+| Requisito | Descrição |
+|-----------|-----------|
+| **Sistema Operacional** | [Windows 10/11](https://www.microsoft.com/windows/) ou [Windows Server 2016+](https://www.microsoft.com/windows-server) |
+| **RSAT** | [Remote Server Administration Tools](https://learn.microsoft.com/en-us/troubleshoot/windows-server/system-management-components/remote-server-administration-tools) (Módulo ActiveDirectory do PowerShell) |
+| **Privilégios** | Executar como **Administrador** (o manifesto solicita UAC automaticamente) |
+| **Permissões AD** | Conta de usuário em execução com permissão para desabilitar/habilitar contas no AD |
+
+## Design da Interface
+*   Tema escuro baseado na paleta *Catppuccin Mocha*.
+*   Seção de entrada com campo de usuário e seletores de data/hora intuitivos.
+*   Botões de ação responsivos com *hover effects*.
+*   Tabela de tarefas com identificação por status coloridos (Agendado = Amarelo, Reativado = Verde, Cancelado = Vermelho).
+*   Log de atividades na tela com marcações de hora (timestamps) e coloração dinâmica por tipo de mensagem.
+*   Barra de status lateral com indicador visual interativo.
