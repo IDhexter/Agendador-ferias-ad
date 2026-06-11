@@ -672,7 +672,7 @@ Namespace ADUserManager
                     AddLog("Criando tarefa agendada para desativação...", clrYellow)
                     Dim dDateStr As String = disableDate.ToString("yyyy-MM-ddTHH:mm:ss")
                     Dim dTaskCmd As String =
-                        "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File """" & disableScriptPath & """"'" & vbCrLf &
+                        "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File """ & disableScriptPath & """'" & vbCrLf &
                         "$trigger = New-ScheduledTaskTrigger -Once -At '" & dDateStr & "'" & vbCrLf &
                         "$trigger.EndBoundary = (Get-Date '" & dDateStr & "').AddDays(30).ToString('s')" & vbCrLf &
                         "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Days 30)" & vbCrLf &
