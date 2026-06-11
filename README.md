@@ -42,16 +42,18 @@ graph TD;
 *   Cancela a tarefa agendada sem reativar o usuário.
 *   O usuário permanece desabilitado (requerendo ação manual futura).
 
-### 4. Histórico Persistente
+### 4. Busca de Usuários
+*   Barra de pesquisa integrada na interface para filtrar instantaneamente usuários na tabela de histórico, ideal para ambientes com dezenas de tarefas pendentes.
+
+### 5. Histórico Persistente
 *   Todas as operações são salvas localmente em `%LocalAppData%\ADUserManager\history.json`.
 
-## Detalhes do Agendamento (Por Baixo dos Panos)
-Para as equipes de infraestrutura e administração de sistemas, é essencial compreender o fluxo exato de como a reativação é agendada para fins de auditoria e segurança:
+## Detalhes do Agendamento e Segurança (Zero-Scripts)
+Para as equipes de infraestrutura e administração de sistemas, a ferramenta foi projetada com foco máximo em segurança e não deixa rastros vulneráveis no servidor:
 
-1. **Local de Armazenamento**: Ao criar um agendamento, a ferramenta gera dinamicamente um arquivo de script PowerShell (`.ps1`) em uma pasta segura dentro do perfil do usuário que está rodando o programa:
-   `%LocalAppData%\ADUserManager\scripts\` *(ex: C:\Users\nome\AppData\Local\ADUserManager\scripts\)*
-2. **Conteúdo do Script**: O script contém as diretivas para reativar o usuário (`Enable-ADAccount -Identity 'Usuario'`) e, logo em seguida, um comando para **auto-descadastrar** a tarefa do Windows e deletar o próprio arquivo, garantindo que não fiquem resíduos no servidor.
-3. **Execução no Task Scheduler**: A tarefa é registrada na raiz do Agendador de Tarefas do Windows. Ela é instruída a invocar o executável nativo `powershell.exe` em *background* passando como argumento a flag `-ExecutionPolicy Bypass` e apontando para o script local.
+1. **Arquitetura Zero-Scripts (Base64)**: Nenhum arquivo `.ps1` físico é gravado no disco rígido do servidor. A ferramenta criptografa o comando nativo do PowerShell em `Base64` diretamente no código (C#/VB.NET).
+2. **Execução no Task Scheduler**: A tarefa é registrada na raiz do Agendador de Tarefas do Windows. Ela é instruída a invocar o executável nativo `powershell.exe` em *background*, passando a string codificada via argumento `-EncodedCommand`. Isso burla completamente políticas restritivas de execução local e previne falsos-positivos de antivírus.
+3. **Auto-exclusão Imediata**: O comando codificado contém a diretiva de reativação (`Enable-ADAccount`) e, *na mesma linha*, a instrução para **auto-descadastrar** a tarefa (`Unregister-ScheduledTask`). Após a execução com sucesso, a tarefa "some" do servidor, garantindo que não fiquem resíduos.
 4. **Privilégios (SYSTEM)**: As tarefas são injetadas para rodar com privilégios máximos (`RunLevel Highest`) e utilizando a conta `SYSTEM` (LogonType ServiceAccount), garantindo que a reativação ocorra no servidor mesmo que o administrador original não esteja logado no dia/hora programados.
 
 ## Comandos PowerShell Utilizados
