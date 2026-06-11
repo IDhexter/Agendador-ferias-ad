@@ -1,113 +1,91 @@
-# AD User Manager - Agendador de Férias AD
+# AD User Manager - Agendador de Férias AD 🚀
 
-[⬇️ **BAIXAR O EXECUTÁVEL PRONTO (ADUserManager.exe)**](Download/ADUserManager.exe)
+<div align="center">
+  <img src="assets/dashboard.png" alt="Dashboard Corporativo" width="800">
+  <br><br>
+  <strong>Uma ferramenta Enterprise em VB.NET para gerenciamento automatizado de férias no Active Directory.</strong>
+</div>
+
+---
+
+### [⬇️ **BAIXAR O EXECUTÁVEL PRONTO (ADUserManager.exe)**](Download/ADUserManager.exe)
 
 ## Visão Geral
-Programa em **VB.NET (Windows Forms)** que permite desabilitar usuários do [Active Directory](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview) e agendar automaticamente a reativação em uma data/hora futura, usando [PowerShell](https://learn.microsoft.com/en-us/powershell/) e **Tarefas Agendadas do Windows**.
+Programa focado em infraestrutura que permite desabilitar usuários do **Active Directory** instantaneamente e **agendar automaticamente a reativação** em uma data/hora futura, utilizando uma arquitetura robusta e invisível (*Zero-Scripts*) junto ao **Windows Task Scheduler**.
 
-## Arquitetura
-A ferramenta utiliza uma interface rica que se comunica com o sistema operacional para realizar operações automáticas.
+---
+
+## 🌟 O que há de novo na Versão Corporativa?
+
+### 1. Dashboard Enterprise (UI/UX)
+O visual "quadrado" do Windows antigo ficou para trás. A nova interface foi desenhada seguindo padrões de design corporativos modernos:
+*   **Borderless & Title Bar Customizada:** Sem bordas do sistema, design contínuo.
+*   **Layout em Cartões (Cards):** Áreas de interação, busca e relatórios separadas em "Ilhas" visuais (Dark Mode com paleta *Catppuccin*).
+*   **Ação Guiada (Call to Action):** O botão principal rouba a atenção visual, acelerando o trabalho do analista.
+
+### 2. Validação Prévia (Anti-Erro)
+Antes de agendar qualquer rotina no servidor, a ferramenta realiza um `Get-ADUser` silencioso para **validar se o usuário realmente existe**. Caso haja algum erro de digitação no nome, o sistema bloqueia o agendamento preventivamente.
+
+### 3. Barra de Busca Instantânea
+Para ambientes com dezenas de colaboradores em férias, a nova **barra de busca** permite filtrar a tabela de histórico instantaneamente, encontrando o agendamento de um funcionário específico em milissegundos.
+
+---
+
+## 🔒 Arquitetura de Segurança (Zero-Scripts)
+Para equipes de Segurança da Informação (InfoSec) e SysAdmins, a ferramenta foi projetada para não deixar vulnerabilidades no servidor:
+
+1. **Sem Arquivos Ps1:** Nenhum arquivo de script (`.ps1`) é gravado no disco rígido do servidor. A ferramenta converte o comando PowerShell nativo em **Base64** diretamente no código compilado.
+2. **EncodedCommand:** A tarefa injeta a string codificada via argumento `-EncodedCommand` no `powershell.exe`. Isso burla políticas de execução locais restritivas e previne falsos-positivos de antivírus.
+3. **Auto-Limpeza Imediata:** A injeção contém a diretiva de reativação e, *na mesma linha*, a instrução `Unregister-ScheduledTask`. A tarefa **apaga a si mesma** do servidor no exato milissegundo em que é concluída.
+4. **Privilégios Inabaláveis:** As tarefas rodam via usuário `SYSTEM` com privilégio máximo (`RunLevel Highest`). O servidor só precisa estar ligado para que a reativação ocorra; o Administrador não precisa estar logado!
 
 ```mermaid
 graph TD;
-    UI[Interface Gráfica WinForms] --> AD[Active Directory]
-    UI --> TS[Windows Task Scheduler]
-    UI --> JSON[Histórico e Banco de Dados Local]
-    TS -. Executa na Data/Hora .-> AD
+    UI[Interface Gráfica WinForms] --> AD[Busca/Validação Get-ADUser]
+    UI --> TS[Cria Tarefa no Task Scheduler]
+    TS -. No dia agendado .-> PS[Executa Base64 na Memória]
+    PS -.-> AD2[Reativa/Inativa ADAccount]
+    PS -.-> CL[Auto-Limpeza do Task Scheduler]
 ```
 
-## Estrutura de Arquivos
+---
 
-| Arquivo | Descrição |
-|---------|-----------|
-| `ADUserManager.vbproj` | Projeto .NET 8 WinForms |
-| `app.manifest` | Manifesto para elevação de privilégios de Administrador (UAC) |
-| `Program.vb` | Ponto de entrada da aplicação (Entry Point) |
-| `MainForm.vb` | Formulário principal contendo toda a lógica visual e operações PowerShell |
-
-## Funcionalidades
+## 🛠️ Como Utilizar
 
 ### 1. Desabilitar e Agendar Reativação
-*   Insira o `sAMAccountName` do usuário e a data/hora de reativação desejada.
-*   O programa executa `Disable-ADAccount` via PowerShell imediatamente.
-*   Registra uma **Tarefa Agendada do Windows** para executar o comando de reativação na data/hora especificada.
-*   A tarefa roda como `SYSTEM` com privilégios elevados, operando mesmo com o programa fechado.
+*   Insira o `sAMAccountName` (login) do usuário e a data/hora de retorno das férias.
+*   O programa validará o usuário, executará `Disable-ADAccount` e agendará a reativação.
+*   Acompanhe o log na tela verde!
 
-### 2. Reativar Agora
-*   Selecione uma tarefa na tabela e clique em **Reativar Agora**.
-*   Executa `Enable-ADAccount` imediatamente.
-*   Remove a tarefa agendada correspondente no Windows.
+### 2. Reativação Imediata (Emergência)
+*   O funcionário voltou mais cedo das férias? Selecione-o na Tabela de Histórico e clique em **Reativar Agora ⚡**. O agendamento futuro é quebrado e ele volta a trabalhar na hora.
 
-### 3. Remover Agendamento
-*   Cancela a tarefa agendada sem reativar o usuário.
-*   O usuário permanece desabilitado (requerendo ação manual futura).
+### 3. Remoção de Agendamento
+*   Desistiu do processo? Clique em **Remover Agendamento 🗑️** para apagar a tarefa invisível do Windows Task Scheduler.
 
-### 4. Busca de Usuários
-*   Barra de pesquisa integrada na interface para filtrar instantaneamente usuários na tabela de histórico, ideal para ambientes com dezenas de tarefas pendentes.
+---
 
-### 5. Histórico Persistente
-*   Todas as operações são salvas localmente em `%LocalAppData%\ADUserManager\history.json`.
-
-## Detalhes do Agendamento e Segurança (Zero-Scripts)
-Para as equipes de infraestrutura e administração de sistemas, a ferramenta foi projetada com foco máximo em segurança e não deixa rastros vulneráveis no servidor:
-
-1. **Arquitetura Zero-Scripts (Base64)**: Nenhum arquivo `.ps1` físico é gravado no disco rígido do servidor. A ferramenta criptografa o comando nativo do PowerShell em `Base64` diretamente no código (C#/VB.NET).
-2. **Execução no Task Scheduler**: A tarefa é registrada na raiz do Agendador de Tarefas do Windows. Ela é instruída a invocar o executável nativo `powershell.exe` em *background*, passando a string codificada via argumento `-EncodedCommand`. Isso burla completamente políticas restritivas de execução local e previne falsos-positivos de antivírus.
-3. **Auto-exclusão Imediata**: O comando codificado contém a diretiva de reativação (`Enable-ADAccount`) e, *na mesma linha*, a instrução para **auto-descadastrar** a tarefa (`Unregister-ScheduledTask`). Após a execução com sucesso, a tarefa "some" do servidor, garantindo que não fiquem resíduos.
-4. **Privilégios (SYSTEM)**: As tarefas são injetadas para rodar com privilégios máximos (`RunLevel Highest`) e utilizando a conta `SYSTEM` (LogonType ServiceAccount), garantindo que a reativação ocorra no servidor mesmo que o administrador original não esteja logado no dia/hora programados.
-
-## Comandos PowerShell Utilizados
-
-```powershell
-# Verificar se o usuário existe
-Get-ADUser -Identity '<username>'
-
-# Desabilitar usuário
-Disable-ADAccount -Identity '<username>'
-
-# Reativar usuário
-Enable-ADAccount -Identity '<username>'
-
-# Criar tarefa agendada
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '...'
-$trigger = New-ScheduledTaskTrigger -Once -At '<datetime>'
-Register-ScheduledTask -TaskName '<name>' -Action $action -Trigger $trigger ...
-
-# Remover tarefa agendada
-Unregister-ScheduledTask -TaskName '<name>' -Confirm:$false
-```
-
-## Como Compilar o .exe
+## ⚙️ Como Compilar Diretamente do Código Fonte
 
 ### Pré-requisitos
 *   [.NET 8 SDK instalado](https://dotnet.microsoft.com/download/dotnet/8.0)
 
-### Compilação
-Abra o terminal na pasta do projeto (`ADUserManager`) e execute o script `build.bat` ou rode diretamente:
+### Processo
+1. Abra o terminal na pasta do projeto (`ADUserManager`).
+2. Execute o script `build.bat` ou o comando direto:
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
 ```
 
-O arquivo `.exe` será gerado em:
-`bin\Release\net8.0-windows\win-x64\publish\ADUserManager.exe`
+O arquivo final ficará na pasta interna `bin/Release/net8.0-windows/win-x64/publish/ADUserManager.exe`.
 
-> [!IMPORTANT]
-> O `.exe` gerado é **self-contained** — não requer .NET instalado na máquina destino.
+---
 
-## Requisitos para Execução
+## 📋 Requisitos para Uso em Produção
 
 | Requisito | Descrição |
 |-----------|-----------|
-| **Sistema Operacional** | [Windows 10/11](https://www.microsoft.com/windows/) ou [Windows Server 2016+](https://www.microsoft.com/windows-server) |
-| **RSAT** | [Remote Server Administration Tools](https://learn.microsoft.com/en-us/troubleshoot/windows-server/system-management-components/remote-server-administration-tools) (Módulo ActiveDirectory do PowerShell) |
-| **Privilégios** | Executar como **Administrador** (o manifesto solicita UAC automaticamente) |
-| **Permissões AD** | Conta de usuário em execução com permissão para desabilitar/habilitar contas no AD |
-
-## Design da Interface
-*   Tema escuro baseado na paleta *Catppuccin Mocha*.
-*   Seção de entrada com campo de usuário e seletores de data/hora intuitivos.
-*   Botões de ação responsivos com *hover effects*.
-*   Tabela de tarefas com identificação por status coloridos (Agendado = Amarelo, Reativado = Verde, Cancelado = Vermelho).
-*   Log de atividades na tela com marcações de hora (timestamps) e coloração dinâmica por tipo de mensagem.
-*   Barra de status lateral com indicador visual interativo.
+| **Servidor** | [Windows Server 2016+](https://www.microsoft.com/windows-server) (Recomendado) ou Windows 10/11 |
+| **Módulo AD** | Ferramenta RSAT instalada (*Remote Server Administration Tools*) |
+| **Execução** | Rodar como **Administrador** (a janela pedirá permissão sozinha) |
