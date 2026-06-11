@@ -16,6 +16,7 @@ Namespace ADUserManager
         Public Property DisabledDate As String = ""
         Public Property ReactivationDate As String = ""
         Public Property ScheduledTaskName As String = ""
+        Public Property ScheduledDisableTaskName As String = ""
         Public Property Status As String = "Agendado"
     End Class
 
@@ -51,6 +52,10 @@ Namespace ADUserManager
         '  Controles da Interface
         ' ═══════════════════════════════════════════════════════
         Private txtUsername As TextBox
+        Private rbDisableNow As RadioButton
+        Private rbDisableSchedule As RadioButton
+        Private dtpDisableDate As DateTimePicker
+        Private dtpDisableTime As DateTimePicker
         Private dtpDate As DateTimePicker
         Private dtpTime As DateTimePicker
         Private btnDisable As Button
@@ -119,7 +124,7 @@ Namespace ADUserManager
         Private Sub InitializeUI()
             ' ─── Configurações do Formulário ───
             Me.Text = "AD User Manager"
-            Me.ClientSize = New Size(940, 760)
+            Me.ClientSize = New Size(940, 810)
             Me.StartPosition = FormStartPosition.CenterScreen
             Me.BackColor = clrBase
             Me.ForeColor = clrText
@@ -185,13 +190,13 @@ Namespace ADUserManager
             '  SEÇÃO DE ENTRADA
             ' ═══════════════════════════════════════════════════════
             Dim pnlInput As New Panel()
-            pnlInput.Bounds = New Rectangle(20, 100, 900, 110)
+            pnlInput.Bounds = New Rectangle(20, 100, 900, 160)
             pnlInput.BackColor = clrSurface0
             Me.Controls.Add(pnlInput)
 
             ' Borda esquerda decorativa
             Dim pnlInputAccent As New Panel()
-            pnlInputAccent.Bounds = New Rectangle(0, 0, 4, 110)
+            pnlInputAccent.Bounds = New Rectangle(0, 0, 4, 160)
             pnlInputAccent.BackColor = clrMauve
             pnlInput.Controls.Add(pnlInputAccent)
 
@@ -228,19 +233,70 @@ Namespace ADUserManager
             lblUserHint.Location = New Point(800, 20)
             pnlInput.Controls.Add(lblUserHint)
 
-            ' Linha 2: Data e Hora de Reativação
+            ' Linha 2: Data e Hora de Desativação
+            Dim lblDisable As New Label()
+            lblDisable.Text = "Desativação:"
+            lblDisable.Font = New Font("Segoe UI Semibold", 10)
+            lblDisable.ForeColor = clrSubtext
+            lblDisable.AutoSize = True
+            lblDisable.Location = New Point(20, 65)
+            pnlInput.Controls.Add(lblDisable)
+
+            rbDisableNow = New RadioButton()
+            rbDisableNow.Text = "Imediata"
+            rbDisableNow.Font = New Font("Segoe UI", 10)
+            rbDisableNow.ForeColor = clrText
+            rbDisableNow.Location = New Point(135, 63)
+            rbDisableNow.AutoSize = True
+            rbDisableNow.Checked = True
+            pnlInput.Controls.Add(rbDisableNow)
+
+            rbDisableSchedule = New RadioButton()
+            rbDisableSchedule.Text = "Agendar"
+            rbDisableSchedule.Font = New Font("Segoe UI", 10)
+            rbDisableSchedule.ForeColor = clrText
+            rbDisableSchedule.Location = New Point(230, 63)
+            rbDisableSchedule.AutoSize = True
+            pnlInput.Controls.Add(rbDisableSchedule)
+
+            dtpDisableDate = New DateTimePicker()
+            dtpDisableDate.Format = DateTimePickerFormat.Short
+            dtpDisableDate.Size = New Size(120, 28)
+            dtpDisableDate.Location = New Point(320, 62)
+            dtpDisableDate.MinDate = DateTime.Today
+            dtpDisableDate.Value = DateTime.Today
+            dtpDisableDate.Font = New Font("Segoe UI", 10)
+            dtpDisableDate.Visible = False
+            pnlInput.Controls.Add(dtpDisableDate)
+
+            dtpDisableTime = New DateTimePicker()
+            dtpDisableTime.Format = DateTimePickerFormat.Time
+            dtpDisableTime.ShowUpDown = True
+            dtpDisableTime.Size = New Size(90, 28)
+            dtpDisableTime.Location = New Point(450, 62)
+            dtpDisableTime.Value = DateTime.Today.AddHours(18)
+            dtpDisableTime.Font = New Font("Segoe UI", 10)
+            dtpDisableTime.Visible = False
+            pnlInput.Controls.Add(dtpDisableTime)
+
+            AddHandler rbDisableSchedule.CheckedChanged, Sub(s, ev)
+                                                             dtpDisableDate.Visible = rbDisableSchedule.Checked
+                                                             dtpDisableTime.Visible = rbDisableSchedule.Checked
+                                                         End Sub
+
+            ' Linha 3: Data e Hora de Reativação
             Dim lblDate As New Label()
             lblDate.Text = "Reativação:"
             lblDate.Font = New Font("Segoe UI Semibold", 10)
             lblDate.ForeColor = clrSubtext
             lblDate.AutoSize = True
-            lblDate.Location = New Point(20, 65)
+            lblDate.Location = New Point(20, 112)
             pnlInput.Controls.Add(lblDate)
 
             dtpDate = New DateTimePicker()
             dtpDate.Format = DateTimePickerFormat.Short
             dtpDate.Size = New Size(150, 28)
-            dtpDate.Location = New Point(135, 62)
+            dtpDate.Location = New Point(135, 109)
             dtpDate.MinDate = DateTime.Today
             dtpDate.Value = DateTime.Today.AddDays(1)
             dtpDate.Font = New Font("Segoe UI", 10)
@@ -251,14 +307,14 @@ Namespace ADUserManager
             lblTime.Font = New Font("Segoe UI Semibold", 10)
             lblTime.ForeColor = clrSubtext
             lblTime.AutoSize = True
-            lblTime.Location = New Point(305, 65)
+            lblTime.Location = New Point(305, 112)
             pnlInput.Controls.Add(lblTime)
 
             dtpTime = New DateTimePicker()
             dtpTime.Format = DateTimePickerFormat.Time
             dtpTime.ShowUpDown = True
             dtpTime.Size = New Size(120, 28)
-            dtpTime.Location = New Point(355, 62)
+            dtpTime.Location = New Point(355, 109)
             dtpTime.Value = DateTime.Today.AddHours(8) ' Padrão: 08:00
             dtpTime.Font = New Font("Segoe UI", 10)
             pnlInput.Controls.Add(dtpTime)
@@ -268,15 +324,15 @@ Namespace ADUserManager
             lblDateHint.Font = New Font("Segoe UI", 8.5F, FontStyle.Italic)
             lblDateHint.ForeColor = clrOverlay0
             lblDateHint.AutoSize = True
-            lblDateHint.Location = New Point(490, 67)
+            lblDateHint.Location = New Point(490, 114)
             pnlInput.Controls.Add(lblDateHint)
 
             ' ═══════════════════════════════════════════════════════
             '  BOTÕES DE AÇÃO
             ' ═══════════════════════════════════════════════════════
-            Dim yBtn As Integer = 222
+            Dim yBtn As Integer = 272
 
-            btnDisable = CreateStyledButton("  Desabilitar e Agendar Reativação", clrRed, 330)
+            btnDisable = CreateStyledButton("  Aplicar Desativação e Reativação", clrRed, 330)
             btnDisable.Location = New Point(20, yBtn)
             Me.Controls.Add(btnDisable)
             AddHandler btnDisable.Click, AddressOf BtnDisable_Click
@@ -294,7 +350,7 @@ Namespace ADUserManager
             ' ═══════════════════════════════════════════════════════
             '  TABELA DE TAREFAS AGENDADAS
             ' ═══════════════════════════════════════════════════════
-            Dim yGrid As Integer = 278
+            Dim yGrid As Integer = 328
 
             Dim lblGrid As New Label()
             lblGrid.Text = "  Tarefas Agendadas"
@@ -365,7 +421,7 @@ Namespace ADUserManager
             ' ═══════════════════════════════════════════════════════
             '  LOG DE ATIVIDADES
             ' ═══════════════════════════════════════════════════════
-            Dim yLog As Integer = 503
+            Dim yLog As Integer = 553
 
             Dim lblLog As New Label()
             lblLog.Text = "  Log de Atividades"
@@ -392,7 +448,7 @@ Namespace ADUserManager
             '  BARRA DE STATUS
             ' ═══════════════════════════════════════════════════════
             Dim pnlStatus As New Panel()
-            pnlStatus.Bounds = New Rectangle(0, 710, 940, 50)
+            pnlStatus.Bounds = New Rectangle(0, 760, 940, 50)
             pnlStatus.BackColor = clrCrust
             Me.Controls.Add(pnlStatus)
 
@@ -512,19 +568,44 @@ Namespace ADUserManager
             End If
 
             Dim reactivationDate As DateTime = dtpDate.Value.Date.Add(dtpTime.Value.TimeOfDay)
-            If reactivationDate <= DateTime.Now Then
-                MessageBox.Show(
-                    "A data/hora de reativação deve ser no futuro.",
-                    "Data Inválida",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
+            
+            Dim disableDate As DateTime = DateTime.Now
+            Dim disableNow As Boolean = rbDisableNow.Checked
+            
+            If Not disableNow Then
+                disableDate = dtpDisableDate.Value.Date.Add(dtpDisableTime.Value.TimeOfDay)
+                If disableDate <= DateTime.Now Then
+                    MessageBox.Show(
+                        "A data/hora de desativação deve ser no futuro.",
+                        "Data Inválida",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Return
+                End If
+                If disableDate >= reactivationDate Then
+                    MessageBox.Show(
+                        "A data de desativação deve ser ANTERIOR à data de reativação.",
+                        "Data Inválida",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Return
+                End If
+            Else
+                If reactivationDate <= DateTime.Now Then
+                    MessageBox.Show(
+                        "A data/hora de reativação deve ser no futuro.",
+                        "Data Inválida",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Return
+                End If
             End If
 
             ' ── Confirmação ──
-            Dim confirmMsg As String = "Deseja executar as seguintes ações?" & vbCrLf & vbCrLf &
-                "1. DESABILITAR o usuário '" & username & "' no Active Directory" & vbCrLf &
-                "2. AGENDAR a reativação automática para " & reactivationDate.ToString("dd/MM/yyyy") & " às " & reactivationDate.ToString("HH:mm") & vbCrLf & vbCrLf &
-                "Confirma?"
+            Dim confirmMsg As String = "Deseja executar as seguintes ações?" & vbCrLf & vbCrLf
+            If disableNow Then
+                confirmMsg &= "1. DESABILITAR o usuário '" & username & "' AGORA no Active Directory" & vbCrLf
+            Else
+                confirmMsg &= "1. AGENDAR a desativação do usuário '" & username & "' para " & disableDate.ToString("dd/MM/yyyy HH:mm") & vbCrLf
+            End If
+            confirmMsg &= "2. AGENDAR a reativação automática para " & reactivationDate.ToString("dd/MM/yyyy HH:mm") & vbCrLf & vbCrLf & "Confirma?"
 
             If MessageBox.Show(confirmMsg, "Confirmar Ação",
                               MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
@@ -551,23 +632,62 @@ Namespace ADUserManager
                     Return
                 End If
 
-                ' ── Passo 2: Desabilitar o usuário ──
-                AddLog("Desabilitando usuário '" & username & "'...", clrYellow)
-                Dim disableCmd As String = "Import-Module ActiveDirectory" & vbCrLf &
-                    "Disable-ADAccount -Identity '" & username & "'" & vbCrLf &
-                    "Write-Output 'DISABLE_SUCCESS'"
-                Dim disableResult = RunPowerShell(disableCmd)
+                Dim taskNameDisable As String = ""
 
-                If Not disableResult.Success Then
-                    AddLog("ERRO ao desabilitar '" & username & "': " & disableResult.Output, clrRed)
-                    SetStatus("● Erro ao desabilitar", clrRed)
-                    MessageBox.Show(
-                        "Erro ao desabilitar o usuário:" & vbCrLf & vbCrLf & disableResult.Output,
-                        "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    Return
+                If disableNow Then
+                    ' ── Passo 2: Desabilitar o usuário agora ──
+                    AddLog("Desabilitando usuário '" & username & "'...", clrYellow)
+                    Dim disableCmd As String = "Import-Module ActiveDirectory" & vbCrLf &
+                        "Disable-ADAccount -Identity '" & username & "'" & vbCrLf &
+                        "Write-Output 'DISABLE_SUCCESS'"
+                    Dim disableResult = RunPowerShell(disableCmd)
+
+                    If Not disableResult.Success Then
+                        AddLog("ERRO ao desabilitar '" & username & "': " & disableResult.Output, clrRed)
+                        SetStatus("● Erro ao desabilitar", clrRed)
+                        MessageBox.Show(
+                            "Erro ao desabilitar o usuário:" & vbCrLf & vbCrLf & disableResult.Output,
+                            "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        Return
+                    End If
+
+                    AddLog("Usuário '" & username & "' DESABILITADO com sucesso.", clrGreen)
+                Else
+                    ' ── Passo 2b: Agendar Desativação ──
+                    taskNameDisable = "ADDisable_" & username & "_" & DateTime.Now.ToString("yyyyMMddHHmmss")
+                    Dim disableScriptPath As String = Path.Combine(scriptsDir, taskNameDisable & ".ps1")
+                    Dim disableScriptContent As String =
+                        "Import-Module ActiveDirectory" & vbCrLf &
+                        "try {" & vbCrLf &
+                        "    Disable-ADAccount -Identity '" & username & "'" & vbCrLf &
+                        "    $timestamp = Get-Date -Format 'dd/MM/yyyy HH:mm:ss'" & vbCrLf &
+                        "    Write-Output ""[$timestamp] Usuário '" & username & "' desabilitado com sucesso.""" & vbCrLf &
+                        "} catch {" & vbCrLf &
+                        "    $timestamp = Get-Date -Format 'dd/MM/yyyy HH:mm:ss'" & vbCrLf &
+                        "    Write-Error ""[$timestamp] Erro ao desabilitar '" & username & "': $($_.Exception.Message)""" & vbCrLf &
+                        "    exit 1" & vbCrLf &
+                        "}"
+                    File.WriteAllText(disableScriptPath, disableScriptContent, System.Text.Encoding.UTF8)
+                    
+                    AddLog("Criando tarefa agendada para desativação...", clrYellow)
+                    Dim dDateStr As String = disableDate.ToString("yyyy-MM-ddTHH:mm:ss")
+                    Dim dTaskCmd As String =
+                        "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File """" & disableScriptPath & """"'" & vbCrLf &
+                        "$trigger = New-ScheduledTaskTrigger -Once -At '" & dDateStr & "'" & vbCrLf &
+                        "$trigger.EndBoundary = (Get-Date '" & dDateStr & "').AddDays(30).ToString('s')" & vbCrLf &
+                        "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Days 30)" & vbCrLf &
+                        "$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest" & vbCrLf &
+                        "Register-ScheduledTask -TaskName '" & taskNameDisable & "' -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Desabilitar usuario " & username & " no Active Directory' -Force" & vbCrLf &
+                        "Write-Output 'TASK_CREATED'"
+                    Dim dTaskResult = RunPowerShell(dTaskCmd)
+                    If dTaskResult.Success AndAlso dTaskResult.Output.Contains("TASK_CREATED") Then
+                        AddLog("Tarefa de desativação agendada para " & disableDate.ToString("dd/MM/yyyy HH:mm"), clrGreen)
+                    Else
+                        AddLog("ERRO ao agendar desativação: " & dTaskResult.Output, clrRed)
+                        MessageBox.Show("Erro ao agendar desativação.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        Return
+                    End If
                 End If
-
-                AddLog("Usuário '" & username & "' DESABILITADO com sucesso.", clrGreen)
 
                 ' ── Passo 3: Criar script de reativação ──
                 Dim taskName As String = "ADReactivate_" & username & "_" & DateTime.Now.ToString("yyyyMMddHHmmss")
@@ -610,9 +730,10 @@ Namespace ADUserManager
                 ' ── Registrar resultado ──
                 Dim entry As New TaskEntry()
                 entry.Username = username
-                entry.DisabledDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                entry.DisabledDate = If(disableNow, DateTime.Now.ToString("dd/MM/yyyy HH:mm"), disableDate.ToString("dd/MM/yyyy HH:mm"))
                 entry.ReactivationDate = reactivationDate.ToString("dd/MM/yyyy HH:mm")
                 entry.ScheduledTaskName = taskName
+                entry.ScheduledDisableTaskName = taskNameDisable
 
                 If taskResult.Success AndAlso taskResult.Output.Contains("TASK_CREATED") Then
                     entry.Status = "Agendado"
@@ -620,21 +741,21 @@ Namespace ADUserManager
                     AddLog("Reativação programada para: " & reactivationDate.ToString("dd/MM/yyyy") & " às " & reactivationDate.ToString("HH:mm"), clrBlue)
                     SetStatus("● Concluído com sucesso", clrGreen)
 
-                    MessageBox.Show(
-                        "Operação realizada com sucesso!" & vbCrLf & vbCrLf &
-                        "• Usuário '" & username & "' foi DESABILITADO" & vbCrLf &
-                        "• Reativação agendada para " & reactivationDate.ToString("dd/MM/yyyy HH:mm") & vbCrLf & vbCrLf &
-                        "Tarefa: " & taskName,
-                        "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Dim sucessMsg As String = "Operação realizada com sucesso!" & vbCrLf & vbCrLf
+                    If disableNow Then
+                        sucessMsg &= "• Usuário '" & username & "' foi DESABILITADO" & vbCrLf
+                    Else
+                        sucessMsg &= "• Desativação agendada para " & disableDate.ToString("dd/MM/yyyy HH:mm") & vbCrLf
+                    End If
+                    sucessMsg &= "• Reativação agendada para " & reactivationDate.ToString("dd/MM/yyyy HH:mm") & vbCrLf & vbCrLf & "Tarefa: " & taskName
+                    MessageBox.Show(sucessMsg, "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Else
                     entry.Status = "Erro no Agendamento"
-                    AddLog("AVISO: Usuário desabilitado, mas ERRO ao criar tarefa agendada: " & taskResult.Output, clrPeach)
+                    AddLog("AVISO: Usuário inativado, mas ERRO ao criar tarefa agendada: " & taskResult.Output, clrPeach)
                     SetStatus("● Aviso - Tarefa não agendada", clrPeach)
-
                     MessageBox.Show(
-                        "O usuário foi DESABILITADO com sucesso, porém houve um erro ao criar a tarefa agendada:" & vbCrLf & vbCrLf &
-                        taskResult.Output & vbCrLf & vbCrLf &
-                        "Você precisará REATIVAR o usuário manualmente!",
+                        "Houve um erro ao criar a tarefa agendada:" & vbCrLf & vbCrLf &
+                        taskResult.Output,
                         "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 End If
 
@@ -707,6 +828,13 @@ Namespace ADUserManager
                         File.Delete(scriptPath)
                     End If
 
+                    ' Remover tarefa de desativação
+                    If Not String.IsNullOrEmpty(entry.ScheduledDisableTaskName) Then
+                        RunPowerShell("Unregister-ScheduledTask -TaskName '" & entry.ScheduledDisableTaskName & "' -Confirm:$false -ErrorAction SilentlyContinue")
+                        Dim disableScriptPath As String = Path.Combine(scriptsDir, entry.ScheduledDisableTaskName & ".ps1")
+                        If File.Exists(disableScriptPath) Then File.Delete(disableScriptPath)
+                    End If
+
                     entry.Status = "Reativado"
                     SaveHistory()
                     RefreshGrid()
@@ -777,6 +905,13 @@ Namespace ADUserManager
             Dim scriptPath As String = Path.Combine(scriptsDir, entry.ScheduledTaskName & ".ps1")
             If File.Exists(scriptPath) Then
                 File.Delete(scriptPath)
+            End If
+
+            ' Remover tarefa de desativação
+            If Not String.IsNullOrEmpty(entry.ScheduledDisableTaskName) Then
+                RunPowerShell("Unregister-ScheduledTask -TaskName '" & entry.ScheduledDisableTaskName & "' -Confirm:$false -ErrorAction SilentlyContinue")
+                Dim disableScriptPath As String = Path.Combine(scriptsDir, entry.ScheduledDisableTaskName & ".ps1")
+                If File.Exists(disableScriptPath) Then File.Delete(disableScriptPath)
             End If
 
             entry.Status = "Cancelado"
