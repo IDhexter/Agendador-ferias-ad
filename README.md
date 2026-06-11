@@ -72,16 +72,17 @@ Unregister-ScheduledTask -TaskName '<name>' -Confirm:$false
 *   [.NET 8 SDK instalado](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ### Compilação
-Abra o terminal na pasta do projeto (`ADUserManager`) e rode diretamente:
+Abra o terminal na pasta do projeto (`ADUserManager`) e execute o script `build.bat` ou rode diretamente:
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 ```
 
-O arquivo `.exe` único e leve (Framework-Dependent) será gerado em:
+O arquivo `.exe` será gerado em:
 `bin\Release\net8.0-windows\win-x64\publish\ADUserManager.exe`
 
-> **NOTA TÉCNICA:** A versão recomendada atualmente é **Framework-Dependent** para evitar falsos positivos com o Windows Defender ao rodar aplicações empacotadas via self-extraction.
+> [!IMPORTANT]
+> O `.exe` gerado é **self-contained** — não requer .NET instalado na máquina destino.
 
 ## Requisitos para Execução
 
