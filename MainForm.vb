@@ -599,7 +599,7 @@ Namespace ADUserManager
                 Dim taskCmd As String =
                     "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File """ & scriptPath & """'" & vbCrLf &
                     "$trigger = New-ScheduledTaskTrigger -Once -At '" & dateStr & "'" & vbCrLf &
-                    "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteryPower -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Days 30)" & vbCrLf &
+                    "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Days 30)" & vbCrLf &
                     "$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest" & vbCrLf &
                     "Register-ScheduledTask -TaskName '" & taskName & "' -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Reativar usuario " & username & " no Active Directory - Gerado pelo AD User Manager' -Force" & vbCrLf &
                     "Write-Output 'TASK_CREATED'"
